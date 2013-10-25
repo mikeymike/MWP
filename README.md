@@ -1,4 +1,4 @@
-MWP
+Mobile Web Programming
 ===
 
-MWP Assignment
+Web app to get public flickr images based on location. 
