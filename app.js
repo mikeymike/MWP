@@ -9,6 +9,19 @@ var app = {
         currentCollection: {}
     },
 
+    /**
+     * Application options used for Flickr search, default values set.
+     * Use app.helpers.setOption, app.helpers.removeOption and app.helpers.clearOptions
+     */
+    options: {
+        method: "flickr.photos.search",
+        // Palm beach florida :)
+        lat: 26.705516,
+        lon: -80.057373,
+        per_page: 50,
+        has_geo: true,
+        radius: 1,
+    },
 
     /**
      * Handles startup logic and calls App logic
@@ -29,11 +42,10 @@ var app = {
     },
 
     /**
-     * Fetches a photo collection from Flickr using options provided
-     * @param options
+     * Fetches a photo collection from Flickr using options from app.options
      */
-    fetchCollection: function(options){
-        this.helpers.jsonpCall(options);
+    fetchCollection: function(){
+        this.helpers.jsonpCall(this.options);
     },
 
     /**
@@ -190,6 +202,42 @@ app.helpers = {
         var fileType = photo.hasOwnProperty("originalformat") ? photo.originalformat : "jpg";
         return "http://farm" + photo.farm + ".staticflickr.com/" +
             photo.server + "/" + photo.id + "_" + photo.secret + "_z." + fileType;
+    },
+
+    /**
+     * Function to set an application option
+     * @param key
+     * @param value
+     */
+    setOption: function(key, value){
+        app.options[key] = value;
+    },
+
+    /**
+     * Function to set multiple options using array/object
+     * @param options
+     */
+    setOptions: function(options){
+        for(opt in options){
+            if(options.hasOwnProperty(opt)){
+                this.setOption(opt, options[opt]);
+            }
+        }
+    },
+
+    /**
+     * Function to remove an application option
+     * @param key
+     */
+    removeOption: function(key){
+        delete app.options[key];
+    },
+
+    /**
+     * Function to remove all options
+     */
+    clearOptions: function(){
+        app.options = {};
     }
 }
 
@@ -210,16 +258,14 @@ function jsonFlickrApi(res){
 
 document.addEventListener('DOMContentLoaded', function(){
     app.init(function(){
-        app.fetchCollection({
-            method: "flickr.photos.search",
+
+        app.helpers.setOptions({
             lat: app.coords.latitude,
             lon: app.coords.longitude,
-            per_page: 50,
-            has_geo: true,
-            radius: 1,
-//        geo_context: 2, //May not show results
             jsoncallback: "app.handleCollection"
         });
+
+        app.fetchCollection();
     });
 
     var next = document.getElementById('next');
