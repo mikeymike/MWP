@@ -2,10 +2,7 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8ae2b510-8b2b-44a7-bbd9-92e7e2e7f4a8" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/README.md" afterPath="$PROJECT_DIR$/README.md" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app.css" afterPath="$PROJECT_DIR$/app.css" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/app.js" afterPath="$PROJECT_DIR$/app.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="MWP Assignment.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -31,7 +28,7 @@
       <file leaf-file-name="app.js" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/app.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="270" column="39" selection-start="8203" selection-end="8203" vertical-scroll-proportion="1.245409" vertical-offset="4114" max-vertical-offset="5022">
+            <state line="249" column="21" selection-start="7532" selection-end="7532" vertical-scroll-proportion="0.39232054" vertical-offset="4247" max-vertical-offset="5040">
               <folding />
             </state>
           </provider>
@@ -40,7 +37,7 @@
       <file leaf-file-name="app.css" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/app.css">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="27" column="4" selection-start="453" selection-end="453" vertical-scroll-proportion="0.0" vertical-offset="243" max-vertical-offset="612">
+            <state line="27" column="4" selection-start="453" selection-end="453" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="612">
               <folding />
             </state>
           </provider>
@@ -251,7 +248,8 @@
       <TodoPanelSettings />
     </option>
     <MESSAGE value="Added simple css to make it more uniform, still needs correct css. Also added options to app instead of hard coding." />
-    <option name="LAST_COMMIT_MESSAGE" value="Added simple css to make it more uniform, still needs correct css. Also added options to app instead of hard coding." />
+    <MESSAGE value="Fixed some JS errors/warnings" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed some JS errors/warnings" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager />
@@ -331,7 +329,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/app.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="270" column="39" selection-start="8203" selection-end="8203" vertical-scroll-proportion="1.245409" vertical-offset="4114" max-vertical-offset="5022">
+        <state line="249" column="21" selection-start="7532" selection-end="7532" vertical-scroll-proportion="0.39232054" vertical-offset="4247" max-vertical-offset="5040">
           <folding />
         </state>
       </provider>

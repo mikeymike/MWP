@@ -20,7 +20,7 @@ var app = {
         lon: -80.057373,
         per_page: 50,
         has_geo: true,
-        radius: 1,
+        radius: 1
     },
 
     /**
@@ -97,8 +97,8 @@ var app = {
                 caption: photo.description._content
             }
         };
-        var photo = ich.card(data);
-        document.getElementById("photos").innerHTML += photo;
+        photoCard = ich.card(data);
+        document.getElementById("photos").innerHTML += photoCard;
     },
 
     /**
@@ -118,13 +118,13 @@ var app = {
             });
         } else console.log('End of pages');
     }
-}
+};
 
 
 app.helpers = {
     /**
-     * @param params Array of params
-     * @param callback String name of callback function
+     * Function to make JSONP call, (CORS solution)
+     * @param params for Query String
      */
     jsonpCall: function(params){
         // Build Query String
@@ -141,7 +141,7 @@ app.helpers = {
         // Create script tag to make JSONP call
         var script = document.createElement("script");
         script.src = app.apiURL + queryString;
-        script.id = "jsonp-" + Math.floor((Math.random()*1000)+1)
+        script.id = "jsonp-" + Math.floor((Math.random()*1000)+1);
         document.getElementsByTagName("head")[0].appendChild(script);
         app.data.jsonpElements.push(script);
     },
@@ -184,8 +184,8 @@ app.helpers = {
     /**
      * Not my code: http://jsfiddle.net/johnhunter/s3MeX/
      * Returns the type of the argument
-     * @param {Any}    val    Value to be tested
-     * @returns    {String}    type name for argument
+     * @param val obj/var to get type of
+     * @returns {string} Type of val
      */
     getType: function(val) {
         if (typeof val === 'undefined') return 'undefined';
@@ -239,7 +239,7 @@ app.helpers = {
     clearOptions: function(){
         app.options = {};
     }
-}
+};
 
 /**
  * Catch any API requests without a valid callback
@@ -247,6 +247,7 @@ app.helpers = {
  */
 function jsonFlickrApi(res){
     console.log("Err: I don't know how to handle this!");
+    console.log(res);
 }
 
 
