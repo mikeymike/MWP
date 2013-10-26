@@ -4,6 +4,7 @@ var app = {
     key: "f4bff7377524874c7c2585ea14ed8639",
     apiURL: "http://api.flickr.com/services/rest/",
     lock: false, // Set to true when JSONP call is started, false on completion
+    photoContainer: null, // Should to be set in init callback function
 
     data: {
         jsonpElements: [],
@@ -18,7 +19,7 @@ var app = {
      */
     options: {
         method: "flickr.photos.search",
-        // Palm beach florida :)
+        // Palm beach Florida USA, because why not :)
         lat: 26.705516,
         lon: -80.057373,
         per_page: 20,
@@ -82,13 +83,12 @@ var app = {
 
     /**
      * Function handles a collection of photos from Flickr
-     * Should be called on every search
+     * Calls Fetch Photos to get all photos
      * @param res Flickr Response to getting multiple photos
      */
     handleCollection: function(res){
         this.helpers.removeLastJsonpCall();
         if(res.stat == "ok"){
-
             this.data.currentCollection = res.photos;
 
             // Set page end if we need to
@@ -96,51 +96,12 @@ var app = {
                 app.data.pagesEnd = true;
             }
 
-            for(var i = 0; i < this.data.currentCollection.photo.length; i++){
-                this.fetchPhoto(this.data.currentCollection.photo[i]);
-            }
+            this.buildCollectionHtml(this.data.currentCollection);
+            this.renderCollection(this.data.currentCollection);
 
             app.cacheNextPage();
 
         } else app.helpers.handleAPIError(res);
-    },
-
-    fetchPhoto: function(photo){
-        // TODO: Implement app options instead of hard code ?
-        app.lock = true;
-        this.helpers.jsonpCall({
-            method: "flickr.photos.getInfo",
-            photo_id: photo.id,
-            jsoncallback: "app.handlePhoto"
-        })
-    },
-
-    /**
-     * Function handles app.fetchPhoto response saving to app.data.
-     * @param res JSON individual photo info response from Flickr API
-     */
-    handlePhoto: function(res){
-        this.helpers.removeLastJsonpCall();
-        if(res.stat == "ok"){
-            this.renderPhoto(res.photo);
-        } else app.helpers.handleAPIError(res);
-        app.lock = false;
-    },
-
-    /**
-     * Simply renders the given photo
-     */
-    renderPhoto: function(photo){
-        // Build data for template engine
-        var data = {
-            img: {
-                href: this.helpers.getPhotoURL(photo),
-                alt: photo.title._content,
-                caption: photo.description._content
-            }
-        };
-        photoCard = ich.card(data);
-        document.getElementById("photos").innerHTML += photoCard;
     },
 
     /**
@@ -161,29 +122,60 @@ var app = {
         this.helpers.removeLastJsonpCall();
         if(res.stat == "ok"){
             this.data.nextCollection = res.photos;
+            this.buildCollectionHtml(this.data.nextCollection);
         } else app.helpers.handleAPIError(res);
     },
 
     /**
-     * Shows next page of current collection
-     * TODO: Check to see if its already been cached if so then use that otherwise make the JSONP call
+     *
+     * @param collection
+     */
+    buildCollectionHtml: function(collection){
+        var photoCard;
+        collection.html = "";
+        for(var i = 0; i < collection.photo.length; i++){
+            photoCard = ich.card({
+                img: {
+                    href: this.helpers.getPhotoURL(collection.photo[i]),
+                    alt: collection.photo[i].title,
+                    caption: collection.photo[i].title
+                }
+            });
+            collection.html += photoCard;
+        }
+    },
+
+    /**
+     *
+     * @param collection
+     */
+    renderCollection: function(collection){
+        app.photoContainer.innerHTML += collection.html;
+        app.helpers.addFavouriteListers();
+    },
+
+    /**
+     * Shows next page of current collection checking first in cache then calling fresh if not already cached.
      */
     showNextPage: function(){
         console.log('Show Next Page');
         if(!app.data.pagesEnd){
             if(app.helpers.hasCachedCollection()){
+
+                // Move cached collection over and clear its spot
                 app.data.currentCollection = app.data.nextCollection;
                 app.data.nextCollection = {};
+
+                // Check if the page is the last one, if so let the app know
                 if(this.data.currentCollection.page == this.data.currentCollection.pages){
                     app.data.pagesEnd = true;
                 }
-                for(var i = 0; i < this.data.currentCollection.photo.length; i++){
-                    this.fetchPhoto(this.data.currentCollection.photo[i]);
-                }
 
+                app.renderCollection(app.data.currentCollection);
                 app.cacheNextPage();
             } else {
-                // Fetch next page
+                // For some reason we have managed to get here without next page cached
+                // Fetch next page and pass to handleCollection to build && render
                 app.helpers.setOption("page", app.data.currentCollection.page + 1);
                 app.helpers.setOption("jsoncallback", "app.handleCollection");
                 app.fetchCollection();
@@ -208,6 +200,15 @@ var app = {
                 this.lastScroll = now;
             }
         }
+    },
+
+    /**
+     * TODO: Implement this
+     * Handles the event for favourite click.
+     * @param e
+     */
+    favouritePhoto: function(e){
+        console.log(this);
     }
 };
 
@@ -288,13 +289,14 @@ app.helpers = {
 
     /**
      * Function builds flickr source url
+     * TODO: Specific photo sizes !!! Based on device size !!
      * @param photo
      * @returns {string} photos source url (medium size)
      */
     getPhotoURL: function(photo){
         var fileType = photo.hasOwnProperty("originalformat") ? photo.originalformat : "jpg";
         return "http://farm" + photo.farm + ".staticflickr.com/" +
-            photo.server + "/" + photo.id + "_" + photo.secret + "_z." + fileType;
+            photo.server + "/" + photo.id + "_" + photo.secret + "." + fileType;
     },
 
     /**
@@ -339,6 +341,17 @@ app.helpers = {
      */
     hasCachedCollection: function(){
         return Object.getOwnPropertyNames(app.data.nextCollection).length > 0;
+    },
+
+    /**
+     * Adds event listeners to all favourite buttons
+     * This should be called whenever new cards are added to DOM
+     */
+    addFavouriteListers: function(){
+        var favs = document.getElementsByClassName('fav');
+        for(var i = 0; i < favs.length; i++){
+            favs[i].addEventListener("click", app.favouritePhoto, false);
+        }
     }
 };
 
@@ -360,17 +373,56 @@ function jsonFlickrApi(res){
 
 document.addEventListener('DOMContentLoaded', function(){
     app.init(function(){
+        app.photoContainer = document.getElementById("photos");
 
         app.helpers.setOptions({
-            lat: 52.898446, //app.coords.latitude,
-            lon: -1.269778, //app.coords.longitude,
+            lat: 29.951066, //app.coords.latitude,
+            lon: -90.071532, //app.coords.longitude,
             jsoncallback: "app.handleCollection"
         });
 
         app.fetchCollection();
         window.addEventListener('scroll', app.handleScroll);
     });
-
-    var next = document.getElementById('next');
-    next.addEventListener('click', app.showNextPage);
 }, false);
+
+
+
+// Functions for single photo info
+//
+//
+//    fetchPhoto: function(photo, jsoncallback){
+//        app.lock = true;
+//        this.helpers.jsonpCall({
+//            method: "flickr.photos.getInfo",
+//            photo_id: photo.id,
+//            jsoncallback: jsoncallback
+//        })
+//    },
+// /**
+//     * Function handles app.fetchPhoto response saving to app.data.
+//     * @param res JSON individual photo info response from Flickr API
+//     */
+//    handlePhoto: function(res){
+//        this.helpers.removeLastJsonpCall();
+//        if(res.stat == "ok"){
+//            this.renderPhoto(res.photo);
+//        } else app.helpers.handleAPIError(res);
+//    },
+//
+//    /**
+//     * Simply renders the given photo
+//     */
+//    renderPhoto: function(photo){
+//        // Build data for template engine
+//        var data = {
+//            img: {
+//                href: this.helpers.getPhotoURL(photo),
+//                alt: photo.title._content,
+//                caption: photo.description._content
+//            }
+//        };
+//        photoCard = ich.card(data);
+//        document.getElementById("photos").innerHTML += photoCard;
+//        app.lock = false;
+//    },

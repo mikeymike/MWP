@@ -9,9 +9,10 @@
     <script id="card" type="text/html">
         <div class="card">
             <figure>
-                <img src="{{ img.href }}" alt="{{ img.alt }}">
                 <figcaption>{{{ img.caption }}}</figcaption>
+                <img src="{{ img.href }}" alt="{{ img.alt }}">
             </figure>
+            <button class="btn fav">Favourite!</button>
         </div>
     </script>
 
@@ -24,9 +25,6 @@
     <main role="main">
         <div id="photos">
 
-        </div>
-        <div id="controls">
-            <button id="next">Next</button>
         </div>
     </main>
 
