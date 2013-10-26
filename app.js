@@ -3,10 +3,13 @@ var app = {
 
     key: "f4bff7377524874c7c2585ea14ed8639",
     apiURL: "http://api.flickr.com/services/rest/",
+    lock: false, // Set to true when JSONP call is started, false on completion
 
     data: {
         jsonpElements: [],
-        currentCollection: {}
+        currentCollection: {},
+        nextCollection: {},
+        pagesEnd: false
     },
 
     /**
@@ -18,9 +21,38 @@ var app = {
         // Palm beach florida :)
         lat: 26.705516,
         lon: -80.057373,
-        per_page: 50,
+        per_page: 20,
         has_geo: true,
-        radius: 1
+        radius: 2
+    },
+
+    /**
+     * Client specific stuff, e.g. Viewport functions
+     */
+    client: {
+        viewportWidth: document.documentElement.clientWidth,
+        viewportHeight: document.documentElement.clientHeight,
+
+        /**
+         * Function gets the percentage scrolled down the page.
+         * @returns {number} rounded percent scrolled down
+         */
+        getPercentageScrolled: function(){
+            // Get actual page height, Credit to Borgar for code
+            // http://stackoverflow.com/questions/1145850/how-to-get-height-of-entire-document-with-javascript
+            var body = document.body,
+                html = document.documentElement;
+
+            var pageHeight = Math.max( body.scrollHeight, body.offsetHeight,
+                html.clientHeight, html.scrollHeight, html.offsetHeight );
+
+            var viewportOffset = window.pageYOffset;
+
+            //Debug
+            console.log(Math.round((this.viewportHeight+viewportOffset)/(pageHeight/100)) + "%");
+
+            return Math.round((this.viewportHeight+viewportOffset)/(pageHeight/100));
+        }
     },
 
     /**
@@ -59,14 +91,23 @@ var app = {
 
             this.data.currentCollection = res.photos;
 
+            // Set page end if we need to
+            if(this.data.currentCollection.page == this.data.currentCollection.pages){
+                app.data.pagesEnd = true;
+            }
+
             for(var i = 0; i < this.data.currentCollection.photo.length; i++){
                 this.fetchPhoto(this.data.currentCollection.photo[i]);
             }
+
+            app.cacheNextPage();
 
         } else app.helpers.handleAPIError(res);
     },
 
     fetchPhoto: function(photo){
+        // TODO: Implement app options instead of hard code ?
+        app.lock = true;
         this.helpers.jsonpCall({
             method: "flickr.photos.getInfo",
             photo_id: photo.id,
@@ -83,6 +124,7 @@ var app = {
         if(res.stat == "ok"){
             this.renderPhoto(res.photo);
         } else app.helpers.handleAPIError(res);
+        app.lock = false;
     },
 
     /**
@@ -102,21 +144,70 @@ var app = {
     },
 
     /**
+     * Function starts the caching of next page
+     */
+    cacheNextPage: function(){
+        console.log('Cache Next Page');
+        app.helpers.setOption("page", app.data.currentCollection.page + 1);
+        app.helpers.setOption("jsoncallback", "app.handleCacheCollection");
+        app.fetchCollection();
+    },
+
+    /**
+     * Handles the caching of next page app.cacheNextPage
+     * @param res
+     */
+    handleCacheCollection: function(res){
+        this.helpers.removeLastJsonpCall();
+        if(res.stat == "ok"){
+            this.data.nextCollection = res.photos;
+        } else app.helpers.handleAPIError(res);
+    },
+
+    /**
      * Shows next page of current collection
+     * TODO: Check to see if its already been cached if so then use that otherwise make the JSONP call
      */
     showNextPage: function(){
-        console.log('Next Called');
-        if(app.data.currentCollection.pages > app.data.currentCollection.page){
-            // Can show next page
-            app.fetchCollection({
-                method: "flickr.photos.search",
-                lat: app.coords.latitude,
-                lon: app.coords.longitude,
-                per_page: 50,
-                page: app.data.currentCollection.page + 1,
-                jsoncallback: "app.handleCollection"
-            });
+        console.log('Show Next Page');
+        if(!app.data.pagesEnd){
+            if(app.helpers.hasCachedCollection()){
+                app.data.currentCollection = app.data.nextCollection;
+                app.data.nextCollection = {};
+                if(this.data.currentCollection.page == this.data.currentCollection.pages){
+                    app.data.pagesEnd = true;
+                }
+                for(var i = 0; i < this.data.currentCollection.photo.length; i++){
+                    this.fetchPhoto(this.data.currentCollection.photo[i]);
+                }
+
+                app.cacheNextPage();
+            } else {
+                // Fetch next page
+                app.helpers.setOption("page", app.data.currentCollection.page + 1);
+                app.helpers.setOption("jsoncallback", "app.handleCollection");
+                app.fetchCollection();
+            }
         } else console.log('End of pages');
+    },
+
+    /**
+     * Function handles the scroll event for the application
+     * Throttles event to every 300 milliseconds with JSONP app.lock when waiting for response
+     * TODO: Check if better way, or if this is even going to be good enough!
+     * FIXME: Seem to be getting multiple calls to showNextPage on a quick scroll
+     */
+    handleScroll: function(){
+        if(!app.data.pagesEnd){
+            var now = new Date().getTime();
+            if(!this.hasOwnProperty("lastScroll") || (!app.lock  && !app.data.pagesEnd && now - this.lastScroll > 300)){
+                var percentScrolled = app.client.getPercentageScrolled();
+                if(percentScrolled > 95){
+                    app.showNextPage();
+                }
+                this.lastScroll = now;
+            }
+        }
     }
 };
 
@@ -127,6 +218,7 @@ app.helpers = {
      * @param params for Query String
      */
     jsonpCall: function(params){
+        app.lock = true;
         // Build Query String
         var count = 0;
         var queryString = "?format=json&api_key=" + app.key + "&";
@@ -153,6 +245,7 @@ app.helpers = {
     removeLastJsonpCall: function(){
         document.getElementById(app.data.jsonpElements[0].id).remove();
         app.data.jsonpElements.shift();
+        app.lock = false; // Reset the lock now!
     },
     
     /**
@@ -238,6 +331,14 @@ app.helpers = {
      */
     clearOptions: function(){
         app.options = {};
+    },
+
+    /**
+     * Function checks if app has a cached collection
+     * @returns {boolean}
+     */
+    hasCachedCollection: function(){
+        return Object.getOwnPropertyNames(app.data.nextCollection).length > 0;
     }
 };
 
@@ -261,12 +362,13 @@ document.addEventListener('DOMContentLoaded', function(){
     app.init(function(){
 
         app.helpers.setOptions({
-            lat: app.coords.latitude,
-            lon: app.coords.longitude,
+            lat: 52.898446, //app.coords.latitude,
+            lon: -1.269778, //app.coords.longitude,
             jsoncallback: "app.handleCollection"
         });
 
         app.fetchCollection();
+        window.addEventListener('scroll', app.handleScroll);
     });
 
     var next = document.getElementById('next');
