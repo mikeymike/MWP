@@ -53,6 +53,51 @@ var app = {
             console.log(Math.round((this.viewportHeight+viewportOffset)/(pageHeight/100)) + "%");
 
             return Math.round((this.viewportHeight+viewportOffset)/(pageHeight/100));
+        },
+
+        /**
+         * TODO: Implement this
+         * Handles the event for favourite click.
+         * @param e
+         */
+        favouritePhoto: function(e){
+            console.log(this);
+        },
+
+        /**
+         * Handles touch start by storing elem, and start X pixel
+         * @param e
+         */
+        touchStart: function(e){
+            var elem = e.target;
+            while(elem.className !== "card"){
+                elem = elem.parentNode;
+            }
+            app.client.touchedElem = elem;
+            app.client.touchStartX = e.changedTouches[0].clientX;
+        },
+
+        /**
+         * Handles touch move, moving elem with move
+         * TODO: Throttle ? 
+         * @param e
+         */
+        touchMove: function(e){
+            var movement = e.changedTouches[0].clientX - app.client.touchStartX;
+            app.client.touchedElem.style.left = movement + "px";
+        },
+
+        /**
+         * Handles touch end removing card if needed or snapping back
+         * @param e
+         */
+        touchEnd: function(e){
+            app.client.touchEndX = e.changedTouches[0].clientX;
+            var movement = app.client.touchEndX - app.client.touchStartX;
+            var threshold = app.client.touchedElem.clientWidth/2;
+            if(Math.abs(movement) > threshold){
+                app.client.touchedElem.remove();
+            } app.client.touchedElem.style.left = 0;
         }
     },
 
@@ -151,7 +196,7 @@ var app = {
      */
     renderCollection: function(collection){
         app.photoContainer.innerHTML += collection.html;
-        app.helpers.addFavouriteListers();
+        app.helpers.addDomEventListers();
     },
 
     /**
@@ -185,14 +230,14 @@ var app = {
 
     /**
      * Function handles the scroll event for the application
-     * Throttles event to every 300 milliseconds with JSONP app.lock when waiting for response
+     * Throttles event to every 150 milliseconds with JSONP app.lock when waiting for response
      * TODO: Check if better way, or if this is even going to be good enough!
      * FIXME: Seem to be getting multiple calls to showNextPage on a quick scroll
      */
     handleScroll: function(){
         if(!app.data.pagesEnd){
             var now = new Date().getTime();
-            if(!this.hasOwnProperty("lastScroll") || (!app.lock  && !app.data.pagesEnd && now - this.lastScroll > 300)){
+            if(!this.hasOwnProperty("lastScroll") || (!app.lock  && !app.data.pagesEnd && now - this.lastScroll > 150)){
                 var percentScrolled = app.client.getPercentageScrolled();
                 if(percentScrolled > 95){
                     app.showNextPage();
@@ -200,15 +245,6 @@ var app = {
                 this.lastScroll = now;
             }
         }
-    },
-
-    /**
-     * TODO: Implement this
-     * Handles the event for favourite click.
-     * @param e
-     */
-    favouritePhoto: function(e){
-        console.log(this);
     }
 };
 
@@ -248,7 +284,7 @@ app.helpers = {
         app.data.jsonpElements.shift();
         app.lock = false; // Reset the lock now!
     },
-    
+
     /**
      * @returns {boolean}
      */
@@ -347,10 +383,18 @@ app.helpers = {
      * Adds event listeners to all favourite buttons
      * This should be called whenever new cards are added to DOM
      */
-    addFavouriteListers: function(){
+    addDomEventListers: function(){
+        // Favourite Buttons
         var favs = document.getElementsByClassName('fav');
         for(var i = 0; i < favs.length; i++){
             favs[i].addEventListener("click", app.favouritePhoto, false);
+        }
+        // Touch Events
+        var cards = document.getElementsByClassName("card");
+        for(var i = 0; i < cards.length; i++){
+            cards[i].addEventListener("touchstart", app.client.touchStart);
+            cards[i].addEventListener("touchmove", app.client.touchMove);
+            cards[i].addEventListener("touchend", app.client.touchEnd);
         }
     }
 };
