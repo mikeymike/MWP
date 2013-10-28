@@ -56,12 +56,24 @@ var app = {
         },
 
         /**
-         * TODO: Implement this
          * Handles the event for favourite click.
+         * TODO: Figure out a way to offer offline functionality
          * @param e
          */
         favouritePhoto: function(e){
-            console.log(this);
+            var elem = e.target.parentNode.childNodes[1].children[1];
+            if(elem.className == "card-image"){
+                console.log(window.location.origin);
+                app.apiURL = window.location.origin + "/api.php";
+                app.helpers.jsonpCall({
+                    image: elem.src,
+                    callback: "app.client.test"
+                });
+            } else console.log('He\'s dead jim');
+        },
+
+        test: function(res){
+            console.log(res);
         },
 
         /**
@@ -79,7 +91,7 @@ var app = {
 
         /**
          * Handles touch move, moving elem with move
-         * TODO: Throttle ? 
+         * TODO: Throttle ?
          * @param e
          */
         touchMove: function(e){
@@ -387,7 +399,7 @@ app.helpers = {
         // Favourite Buttons
         var favs = document.getElementsByClassName('fav');
         for(var i = 0; i < favs.length; i++){
-            favs[i].addEventListener("click", app.favouritePhoto, false);
+            favs[i].addEventListener("click", app.client.favouritePhoto, false);
         }
         // Touch Events
         var cards = document.getElementsByClassName("card");
